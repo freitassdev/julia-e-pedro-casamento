@@ -19,6 +19,7 @@ export default {
     extend: {
       fontFamily: {
         lustria: "Lustria, serif",
+        cursive: "Parisienne, cursive",
       },
       colors: {
         border: "hsl(var(--border))",
