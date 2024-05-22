@@ -3,11 +3,12 @@ import './App.css'
 import bg from '@/assets/background.webp'
 import Header from './components/header/header'
 import { useEffect, useRef, useState } from 'react'
-import { Calendar, MapPin, Minus } from 'lucide-react'
+import { Calendar, MapPin, Minus, Trash2 } from 'lucide-react'
 import { Button } from './components/ui/button'
 import { Stepper } from 'primereact/stepper';
 import { StepperPanel } from 'primereact/stepperpanel';
 import { InputText } from 'primereact/inputtext';
+import { InputMask } from 'primereact/inputmask';
 import { SelectButton } from 'primereact/selectbutton';
 import emailjs from 'emailjs-com';
 
@@ -28,9 +29,9 @@ interface IChildren extends IAdult {
 function App() {
   const [days, setDays] = useState(0)
   const [pin, setPin] = useState<string>('')
-  const form = useRef<HTMLFormElement>(null)
+  const [tel, setTel] = useState<string>('')
   const stepperRef = useRef(null);
-
+  const nextParticipantsButton = useRef(null);
   const calculateDays = () => {
     const currentDate = new Date()
     const targetDate = new Date('2024-07-06')
@@ -45,26 +46,72 @@ function App() {
     console.log(import.meta.env)
   }, [])
 
-  function sendEmail(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();    //This is important, i'm not sure why, but the email won't send without it
-    console.log(form)
-    // emailjs.sendForm(import.meta.env.VITE_EMAIL_SERVICE_ID, import.meta.env.VITE_EMAIL_TEMPLATE_ID, form.current!, import.meta.env.VITE_EMAIL_PUBLIC_KEY)
-    //   .then((result) => {
-    //       console.log(result)  //This is if you still want the page to reload (since e.preventDefault() cancelled that behavior) 
-    //   }, (error) => {
-    //       console.log(error.text);
-    //   });
+  const sendEmail = () => {
+    let adultsList = ``;
+    let childrensList = ``;
+    participants.adults.forEach(adult => {
+      adultsList += `<li>Nome: ${adult.name}</li><li>Irá comparecer: ${adult.will.toLowerCase().startsWith('n') ? 'Não' : 'Sim'}</li><br>`;
+    });
+
+    participants.childrens.forEach(child => {
+      childrensList += `<li>Nome: ${child.name}</li><li>Idade: ${child.age}</li><li>Irá comparecer: ${child.will.toLowerCase().startsWith('n') ? 'Não' : 'Sim'}</li><br>`;
+    });
+
+    const htmlMessage = `
+    <h1>Olá, Julia!</h1><p>Um convidado confirmou presença no seu casamento</p>
+    <h1>Lista de Convidados</h1>
+    <h3>Adultos:</h3>
+    <ul>
+      ${adultsList}
+    </ul>
+    <h3>Crianças:</h3>
+    <ul>
+      ${childrensList}
+    </ul>
+    
+    <h3>Informações do Solicitante:</h2>
+    <ul>
+      <li>Pin de Confirmação ou Nome: ${pin}</li>
+      <li>Telefone: +55 ${tel}</li>
+    </ul>
+    `;
+
+
+    emailjs.send(import.meta.env.VITE_EMAIL_SERVICE_ID, import.meta.env.VITE_EMAIL_TEMPLATE_ID, {
+      html_content: htmlMessage,
+    }, import.meta.env.VITE_EMAIL_PUBLIC_KEY)
+      .then((result) => {
+        console.log(result)  //This is if you still want the page to reload (since e.preventDefault() cancelled that behavior) 
+      }, (error) => {
+        console.log(error.text);
+      });
   }
 
   const options: any[] = ['Não comparecerá', 'Irá comparecer'];
   const [participants, setParticipants] = useState<IParticipants>({
-    childrens: [{ name: '', will: 'Não comparecerá', age: 0 }],
+    childrens: [],
     adults: [{ name: '', will: 'Não comparecerá' }]
   });
 
+  const verifyParticipants = () => {
+    const isFormValid = participants.adults.every(adult => adult.name !== '' && adult.name.length > 0) && participants.childrens.every(child => child.name !== '' && child.age !== '');
+    if (nextParticipantsButton.current === null) return;
+    const nextButton = nextParticipantsButton?.current as HTMLButtonElement;
+    if (isFormValid) {
+      nextButton.removeAttribute('disabled');
+    } else {
+      nextButton.setAttribute('disabled', 'disabled');
+    }
+  }
+
   useEffect(() => {
-    console.log(participants)
-  }, [participants])
+    verifyParticipants()
+  }, [participants]);
+
+  useEffect(() => {
+    verifyParticipants()
+  }, []);
+
 
   return (
     <>
@@ -120,7 +167,7 @@ function App() {
               <h1 className='font-cursive'>Confirmação de Presença</h1>
             </div>
             <div className='max-md:flex-row flex flex-row items-center justify-center gap-10'>
-              <Stepper ref={stepperRef} style={{ flexBasis: '50rem', width: "80vw" }}>
+              <Stepper ref={stepperRef} onChangeStep={(e) => e.originalEvent.preventDefault()} style={{ flexBasis: '50rem', width: "80vw" }}>
                 <StepperPanel header="Código Pin">
                   <div className="flex flex-col items-center justify-center h-40 ">
                     <h1 className='font-lustria text-2xl'>Qual o nome que está no convite?</h1>
@@ -139,31 +186,42 @@ function App() {
                 </StepperPanel>
                 <StepperPanel header="Convidados">
                   <div className="flex flex-col items-center justify-center h-auto">
-                    <h1 className='font-lustria text-2xl'>Quem vai?</h1>
-                    <p>É importante que você forneça o nome completo de cada convidado</p>
-                    <div className='mt-5 flex flex-col gap-2 items-center'>
-                      <label>Adultos</label>
+                    <div className='flex flex-col gap-2'>
+                      <div className="flex flex-col itemc-center justify-center h-auto text-center">
+                        <h1 className='font-lustria text-2xl'>Quem vai?</h1>
+                        <p>É importante que você forneça o nome completo de cada convidado</p>
+                      </div>
+                      <label className='mt-5'>Adultos</label>
                       {participants.adults.map((adult, index) => (
-                        <div key={index} className='w-full flex flex-col gap-2 items-center py-4 rounded-sm px-4' style={{
-                          background: '#c5c5c5',
-                        }}>
+                        <div key={index} className='w-full flex flex-col gap-2 items-start py-4 rounded-sm px-4 border border-[#c5c5c5]'>
                           <InputText
                             value={adult.name}
                             onChange={(e) => { setParticipants({ ...participants, adults: participants.adults.map((a, i) => i === index ? { ...a, name: e.target.value } : a) }) }}
                             style={{ width: '100%', padding: '0.5rem', border: '1px solid #d4a245' }}
                             placeholder="Nome do convidado"
                           />
-                          <SelectButton value={adult.will} onChange={(e) => setParticipants({ ...participants, adults: participants.adults.map((a, i) => i === index ? { ...a, will: e.value } : a) })} options={options} />
+                          <div className='mt-2 flex flex-row justify-between items-center w-full'>
+                            <SelectButton value={adult.will} onChange={(e) => setParticipants({ ...participants, adults: participants.adults.map((a, i) => i === index ? { ...a, will: e.value } : a) })} options={options} />
+                            {index === 0 ? <div></div> :
+                              <Button className='bg-red-500 hover:bg-red-400' onClick={() => {
+                                setParticipants({
+                                  ...participants, adults: participants.adults.filter((_, i) => i !== index)
+                                })
+                              }}><Trash2 size={20} /></Button>}
+                          </div>
                         </div>
                       ))}
-                      <Button disabled={pin.length <= 0} className='w-full mt-5 bg-pink-500 hover:bg-pink-400' onClick={() => (stepperRef.current as any)?.nextCallback()}>Proximo</Button>
+                      <Button className='w-full mt-2 bg-pink-500 hover:bg-pink-400' onClick={() => {
+                        setParticipants({
+                          ...participants, adults: [...participants.adults, { name: '', will: 'Não comparecerá' }]
+                        })
 
-                      
+                      }}>Adicionar Adulto</Button>
+
+
                       <label>Crianças</label>
                       {participants.childrens.map((children, index) => (
-                        <div key={index} className='w-full flex flex-col gap-2 items-center py-4 rounded-sm px-4' style={{
-                          background: '#c5c5c5',
-                        }}>
+                        <div key={index} className='w-full flex flex-col gap-2 items-center py-4 rounded-sm px-4  border border-[#c5c5c5]'>
                           <InputText
                             value={children.name}
                             onChange={(e) => { setParticipants({ ...participants, childrens: participants.childrens.map((a, i) => i === index ? { ...a, name: e.target.value } : a) }) }}
@@ -173,47 +231,64 @@ function App() {
                           <InputText
                             value={children.age.toString()}
                             type='number'
-                            onChange={(e) => { setParticipants({ ...participants, childrens: participants.childrens.map((a, i) => i === index ? { ...a, age: parseInt(e.target.value) } : a) }) }}
+                            onChange={(e) => {
+                              if (parseInt(e.target.value) >= 0 && parseInt(e.target.value) <= 17) {
+                                setParticipants({
+                                  ...participants, childrens: participants.childrens.map((a, i) => i === index ? { ...a, age: parseInt(e.target.value) } : a)
+                                })
+                              }
+                            }
+                            }
                             style={{ width: '100%', padding: '0.5rem', border: '1px solid #d4a245' }}
-                            placeholder="Nome do convidado"
+                            placeholder="Idade (até 17 anos)"
                           />
-                          <SelectButton value={children.will} onChange={(e) => setParticipants({ ...participants, childrens: participants.childrens.map((a, i) => i === index ? { ...a, will: e.value } : a) })} options={options} />
+                          <div className='mt-2 flex flex-row justify-between items-center w-full'>
+                            <SelectButton value={children.will} onChange={(e) => setParticipants({ ...participants, childrens: participants.childrens.map((a, i) => i === index ? { ...a, will: e.value } : a) })} options={options} />
+
+                            <Button className='bg-red-500 hover:bg-red-400' onClick={() => {
+                              setParticipants({
+                                ...participants, childrens: participants.childrens.filter((_, i) => i !== index)
+                              })
+                            }}><Trash2 size={20} /></Button>
+                          </div>
                         </div>
                       ))}
-                    </div>
-                    <div className='mt-5'>
-                      <InputText
-                        value={pin}
-                        onChange={(e) => setPin(e.target.value)}
-                        style={{ width: '100%', padding: '0.5rem', border: '1px solid #d4a245' }}
-                        placeholder="PIN ou Nome do Convite"
-                      />
-                      <Button disabled={pin.length <= 0} className='w-full mt-5 bg-pink-500 hover:bg-pink-400' onClick={() => (stepperRef.current as any)?.nextCallback()}>Proximo</Button>
-                    </div>
+                      <Button className='w-full mt-2 bg-pink-500 hover:bg-pink-400' onClick={() => {
+                        setParticipants({
+                          ...participants, childrens: [...participants.childrens, { name: '', will: 'Não comparecerá', age: '' }]
+                        })
 
+                      }}>Adicionar Criança</Button>
+                      <div className='mt-3 w-full flex flex-row gap-2 items-center'>
+                        <Button className='w-full bg-pink-500 hover:bg-pink-400' onClick={() => (stepperRef.current as any)?.prevCallback()}>Anterior</Button>
+                        <Button ref={nextParticipantsButton} className='w-full bg-pink-500 hover:bg-pink-400' onClick={() => (stepperRef.current as any)?.nextCallback()}>Proximo</Button>
+                      </div>
+                    </div>
                   </div>
                   <div className="flex pt-4 justify-content-between">
                     <Button onClick={() => (stepperRef.current as any)?.prevCallback()}>Anterior</Button>
                     <Button onClick={() => (stepperRef.current as any)?.nextCallback()}>Proximo</Button>
                   </div>
                 </StepperPanel>
-                <StepperPanel header="Header III">
-                  <div className="flex flex-column h-12rem">
-                    <div className="border-2 border-dashed surface-border border-round surface-ground flex-auto flex justify-content-center align-items-center font-medium">Content III</div>
-                  </div>
-                  <div className="flex pt-4 justify-content-start">
-                    <Button onClick={() => (stepperRef.current as any)?.prevCallback()}>Anterior</Button>
+                <StepperPanel header="Finalizar">
+                  <div className="flex flex-col items-center justify-center h-40 ">
+                    <h1 className='font-lustria text-2xl'>Deixe um telefone para contato</h1>
+                    <p>Poderemos enviar informações importantes sobre o evento para esse número</p>
+                    <div className='mt-5'>
+                      <InputMask
+                        value={tel ?? ''}
+                        onChange={(e) => setTel(e.target.value ?? '')}
+                        style={{ width: '100%', padding: '0.5rem', border: '1px solid #d4a245' }}
+                        placeholder=""
+                        mask="(99) 99999-9999"
+                      />
+                      <Button disabled={tel.length <= 0} className='w-full mt-5 bg-pink-500 hover:bg-pink-400' onClick={() => sendEmail()}>Enviar</Button>
+                    </div>
                   </div>
                 </StepperPanel>
               </Stepper>
             </div>
           </div>
-        </div>
-        <div className='w-full'>
-          <form onSubmit={(e) => sendEmail(e)} ref={form}>
-            <input type="text" name='from_pin' />
-            <button type='submit' >envia</button>
-          </form>
         </div>
         <br /><br /><br /><br /><br /><br /><br />
       </div>
