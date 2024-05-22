@@ -9,3 +9,15 @@
 .bg-pink-500 {
     background-color: #d4a245 !important;
 }
+
+.p-selectbutton .p-button.p-highlight {
+    background-color: #d4a245 !important;
+    border-color: #d4a245 !important;
+}
+
+@media screen and (max-width: 640px) {
+  .p-stepper-nav {
+    display: none !important;
+  }
+  
+}

@@ -33,6 +33,8 @@ function App() {
   const [days, setDays] = useState(0)
   const [pin, setPin] = useState<string>('')
   const [tel, setTel] = useState<string>('')
+  const [disableSendButton, setDisableSendButton] = useState<boolean>(false)
+
   const stepperRef = useRef(null);
   const nextParticipantsButton = useRef(null);
   const calculateDays = () => {
@@ -166,7 +168,7 @@ function App() {
         </div>
         <div className='bg-white w-full' id="presence">
           <div className='flex flex-col items-center px-10 lg:px-40 py-10 text-pink-400 gap-2'>
-            <div className='text-5xl md:text-7xl text-pink-500'>
+            <div className='text-5xl md:text-7xl text-pink-500 pb-5'>
               <h1 className='font-cursive'>Confirmação de Presença</h1>
             </div>
             <div className='max-md:flex-row flex flex-row items-center justify-center gap-10'>
@@ -262,15 +264,13 @@ function App() {
                         })
 
                       }}>Adicionar Criança</Button>
+                      
+                      <hr className='mt-3' />
                       <div className='mt-3 w-full flex flex-row gap-2 items-center'>
                         <Button className='w-full bg-pink-500 hover:bg-pink-400' onClick={() => (stepperRef.current as any)?.prevCallback()}>Anterior</Button>
                         <Button ref={nextParticipantsButton} className='w-full bg-pink-500 hover:bg-pink-400' onClick={() => (stepperRef.current as any)?.nextCallback()}>Proximo</Button>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex pt-4 justify-content-between">
-                    <Button onClick={() => (stepperRef.current as any)?.prevCallback()}>Anterior</Button>
-                    <Button onClick={() => (stepperRef.current as any)?.nextCallback()}>Proximo</Button>
                   </div>
                 </StepperPanel>
                 <StepperPanel header="Finalizar">
@@ -285,7 +285,7 @@ function App() {
                         placeholder=""
                         mask="(99) 99999-9999"
                       />
-                      <Button disabled={tel.length <= 0} className='w-full mt-5 bg-pink-500 hover:bg-pink-400' onClick={() => sendEmail()}>Enviar</Button>
+                      <Button disabled={disableSendButton} className='w-full mt-5 bg-pink-500 hover:bg-pink-400' onClick={() => sendEmail()}>Enviar</Button>
                     </div>
                   </div>
                 </StepperPanel>
