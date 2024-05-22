@@ -14,7 +14,8 @@ import { InputText } from 'primereact/inputtext';
 import { InputMask } from 'primereact/inputmask';
 import { SelectButton } from 'primereact/selectbutton';
 import emailjs from 'emailjs-com';
-
+import { Toast } from 'primereact/toast';
+        
 interface IParticipants {
   adults: IAdult[]
   childrens: IChildren[]
@@ -35,6 +36,7 @@ function App() {
   const [tel, setTel] = useState<string>('')
   const [disableSendButton, setDisableSendButton] = useState<boolean>(false)
 
+  const toast = useRef<Toast>(null);
   const stepperRef = useRef(null);
   const nextParticipantsButton = useRef(null);
   const calculateDays = () => {
@@ -86,9 +88,15 @@ function App() {
       html_content: htmlMessage,
     }, import.meta.env.VITE_EMAIL_PUBLIC_KEY)
       .then((result) => {
-        console.log(result)  //This is if you still want the page to reload (since e.preventDefault() cancelled that behavior) 
-      }, (error) => {
-        console.log(error.text);
+        if(toast.current === null) return;
+        if(result.status === 200 && result.text === 'OK') {
+          toast.current.show({ severity: 'success', summary: 'Sucesso', detail: 'Email enviado com sucesso!' });
+          setDisableSendButton(true);
+        } else {
+          toast.current.show({ severity: 'error', summary: 'Erro', detail: 'Erro ao enviar email! Reinicie a pagina e tente novamente!' });
+        }
+      }, () => {
+        toast.current.show({ severity: 'error', summary: 'Erro', detail: 'Erro ao enviar email! Reinicie a pagina e tente novamente!' });
       });
   }
 
@@ -121,6 +129,7 @@ function App() {
   return (
     <>
       <div className='w-full'>
+        <Toast ref={toast} />
         <Header />
         <div className='w-full h-full max-h-[100vh]' id="home">
           <img src={bg} className='absolute h-full w-full object-cover -z-10 brightness-75' />
