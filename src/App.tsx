@@ -90,13 +90,13 @@ function App() {
       .then((result) => {
         if(toast.current === null) return;
         if(result.status === 200 && result.text === 'OK') {
-          toast.current.show({ severity: 'success', summary: 'Sucesso', detail: 'Email enviado com sucesso!' });
           setDisableSendButton(true);
+          toast.current.show({ severity: 'success', summary: 'Sucesso', detail: 'Confirmação enviada com sucesso!' });
         } else {
-          toast.current.show({ severity: 'error', summary: 'Erro', detail: 'Erro ao enviar email! Reinicie a pagina e tente novamente!' });
+          toast.current.show({ severity: 'error', summary: 'Erro', detail: 'Erro ao enviar a confirmação! Reinicie a pagina e tente novamente!' });
         }
       }, () => {
-        toast.current.show({ severity: 'error', summary: 'Erro', detail: 'Erro ao enviar email! Reinicie a pagina e tente novamente!' });
+        toast.current.show({ severity: 'error', summary: 'Erro', detail: 'Erro ao enviar a confirmação! Reinicie a pagina e tente novamente!' });
       });
   }
 
